@@ -5,6 +5,7 @@
     <mapping directory="$PROJECT_DIR$/../../ABC/ABCDataServer" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../../ABC/ABCDesktop" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../TNSKCore" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../TNSKDataServer" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
   </component>
 </project>
