@@ -6,13 +6,13 @@ package romanow.abc.desktop;
 
 import retrofit2.Call;
 import romanow.abc.core.ErrorList;
-import romanow.abc.core.constants.Values;
+import romanow.abc.core.entity.baseentityes.JBoolean;
 
 /**
  *
  * @author Admin
  */
-public class TNSKPanel extends BasePanel {
+public class TNSKPanel extends TNSKBasePanel {
 
     /**
      * Creates new form TNSKPanel
@@ -20,6 +20,12 @@ public class TNSKPanel extends BasePanel {
     public TNSKPanel() {
         initComponents();
     }
+
+    @Override
+    public void initPanel(MainBaseFrame main0) {
+        super.initPanel(main0);
+        testScanState();
+        }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -30,18 +36,32 @@ public class TNSKPanel extends BasePanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        ScanOnOff = new javax.swing.JButton();
         GorTransImport = new javax.swing.JButton();
 
         setLayout(null);
 
-        GorTransImport.setText("Импорт");
+        ScanOnOff.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/status_gray.png"))); // NOI18N
+        ScanOnOff.setBorderPainted(false);
+        ScanOnOff.setContentAreaFilled(false);
+        ScanOnOff.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ScanOnOffActionPerformed(evt);
+            }
+        });
+        add(ScanOnOff);
+        ScanOnOff.setBounds(10, 60, 40, 40);
+
+        GorTransImport.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/upload.png"))); // NOI18N
+        GorTransImport.setBorderPainted(false);
+        GorTransImport.setContentAreaFilled(false);
         GorTransImport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GorTransImportActionPerformed(evt);
             }
         });
         add(GorTransImport);
-        GorTransImport.setBounds(22, 19, 74, 22);
+        GorTransImport.setBounds(20, 20, 30, 30);
     }// </editor-fold>//GEN-END:initComponents
     @Override
     public void refresh() {
@@ -53,22 +73,57 @@ public class TNSKPanel extends BasePanel {
     public void shutDown() {
         }
 
-    private void GorTransImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GorTransImportActionPerformed
-        new APICall<ErrorList>(main) {
+    private void testScanState(){
+        new APICall<JBoolean>(main){
+            @Override
+            public Call<JBoolean> apiFun() {
+                return main2.service2.getScanState(main2.debugToken, main.loginUser.getAccount().getPassword());
+                }
+            @Override
+            public void onSucess(JBoolean oo) {
+                if (oo.value())
+                    ScanOnOff.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/status_green.png")));
+                else
+                    ScanOnOff.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/status_gray.png")));
+                }
+            };
+        }
+
+    private void ScanOnOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ScanOnOffActionPerformed
+        new APICall<ErrorList>(main){
             @Override
             public Call<ErrorList> apiFun() {
-                return ((TNSKClient)main).service2.gorTransImport(main.debugToken, main.loginUser.getAccount().getPassword());
-                }
+                return main2.service2.changeScanState(main2.debugToken, main.loginUser.getAccount().getPassword());
+            }
             @Override
             public void onSucess(ErrorList oo) {
-                System.out.println(oo);
-                }
+                System.out.println(oo.toString());
+                testScanState();
+            }
         };
+    }//GEN-LAST:event_ScanOnOffActionPerformed
+
+    private void GorTransImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GorTransImportActionPerformed
+        new OK(200, 200, "Импортировать ДС с NskGorTrans", new I_Button() {
+            @Override
+            public void onPush() {
+                new APICall<ErrorList>(main) {
+                    @Override
+                    public Call<ErrorList> apiFun() {
+                        return ((TNSKClient)main).service2.gorTransImport(main.debugToken, main.loginUser.getAccount().getPassword());
+                    }
+                    @Override
+                    public void onSucess(ErrorList oo) {
+                        System.out.println(oo);
+                    }
+                };
+            }
+        });
     }//GEN-LAST:event_GorTransImportActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton GorTransImport;
-
+    private javax.swing.JButton ScanOnOff;
     // End of variables declaration//GEN-END:variables
 }
