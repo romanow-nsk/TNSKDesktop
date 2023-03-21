@@ -5,27 +5,53 @@
 package romanow.abc.desktop;
 
 import retrofit2.Call;
+import romanow.abc.core.DBRequest;
 import romanow.abc.core.ErrorList;
+import romanow.abc.core.UniException;
+import romanow.abc.core.Utils;
+import romanow.abc.core.constants.ConstValue;
+import romanow.abc.core.constants.Values;
+import romanow.abc.core.constants.ValuesBase;
+import romanow.abc.core.entity.EntityRefList;
 import romanow.abc.core.entity.baseentityes.JBoolean;
+import romanow.abc.core.entity.subjectarea.TRoute;
+import romanow.abc.core.entity.subjectarea.TRouteStop;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  *
  * @author Admin
  */
 public class TNSKPanel extends TNSKBasePanel {
-
+    private EntityRefList<TRoute> routes = new EntityRefList<>();
+    private TRoute cRoute = null;
+    private HashMap<Integer, ConstValue> typeMap = new HashMap<>();
+    private boolean scanOn=false;
     /**
      * Creates new form TNSKPanel
      */
     public TNSKPanel() {
         initComponents();
     }
-
+    //------------------------------------------------------------------------------------------------------------------
     @Override
     public void initPanel(MainBaseFrame main0) {
         super.initPanel(main0);
+        Busy.setVisible(false);
+        typeMap = Values.constMap().getGroupMapByValue("RouteType");
         testScanState();
+        if (scanOn)
+            refreahRoutes();
         }
+    private boolean testBusy(){
+        if (!Busy.isVisible())
+            return false;
+        main.popup("Выполнение операции в фоне");
+        return true;
+        }
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -38,6 +64,9 @@ public class TNSKPanel extends TNSKBasePanel {
 
         ScanOnOff = new javax.swing.JButton();
         GorTransImport = new javax.swing.JButton();
+        Busy = new javax.swing.JButton();
+        RouteList = new java.awt.Choice();
+        StopList = new java.awt.Choice();
 
         setLayout(null);
 
@@ -50,7 +79,7 @@ public class TNSKPanel extends TNSKBasePanel {
             }
         });
         add(ScanOnOff);
-        ScanOnOff.setBounds(10, 60, 40, 40);
+        ScanOnOff.setBounds(110, 10, 40, 40);
 
         GorTransImport.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/upload.png"))); // NOI18N
         GorTransImport.setBorderPainted(false);
@@ -61,7 +90,23 @@ public class TNSKPanel extends TNSKBasePanel {
             }
         });
         add(GorTransImport);
-        GorTransImport.setBounds(20, 20, 30, 30);
+        GorTransImport.setBounds(75, 15, 30, 30);
+
+        Busy.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/shiftoff1.png"))); // NOI18N
+        Busy.setBorderPainted(false);
+        Busy.setContentAreaFilled(false);
+        add(Busy);
+        Busy.setBounds(20, 10, 40, 40);
+
+        RouteList.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                RouteListItemStateChanged(evt);
+            }
+        });
+        add(RouteList);
+        RouteList.setBounds(20, 60, 370, 20);
+        add(StopList);
+        StopList.setBounds(20, 90, 190, 20);
     }// </editor-fold>//GEN-END:initComponents
     @Override
     public void refresh() {
@@ -81,6 +126,7 @@ public class TNSKPanel extends TNSKBasePanel {
                 }
             @Override
             public void onSucess(JBoolean oo) {
+                scanOn = oo.value();
                 if (oo.value())
                     ScanOnOff.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/status_green.png")));
                 else
@@ -88,26 +134,31 @@ public class TNSKPanel extends TNSKBasePanel {
                 }
             };
         }
-
     private void ScanOnOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ScanOnOffActionPerformed
-        new APICall<ErrorList>(main){
+        if (testBusy())
+            return;
+        new APICallAsync<ErrorList>(Busy,main){
             @Override
             public Call<ErrorList> apiFun() {
                 return main2.service2.changeScanState(main2.debugToken, main.loginUser.getAccount().getPassword());
-            }
+                }
             @Override
             public void onSucess(ErrorList oo) {
                 System.out.println(oo.toString());
                 testScanState();
+                if (scanOn)
+                    refreahRoutes();
             }
         };
     }//GEN-LAST:event_ScanOnOffActionPerformed
 
     private void GorTransImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GorTransImportActionPerformed
+        if (testBusy())
+            return;
         new OK(200, 200, "Импортировать ДС с NskGorTrans", new I_Button() {
             @Override
             public void onPush() {
-                new APICall<ErrorList>(main) {
+                new APICallAsync<ErrorList>(Busy,main) {
                     @Override
                     public Call<ErrorList> apiFun() {
                         return ((TNSKClient)main).service2.gorTransImport(main.debugToken, main.loginUser.getAccount().getPassword());
@@ -121,9 +172,63 @@ public class TNSKPanel extends TNSKBasePanel {
         });
     }//GEN-LAST:event_GorTransImportActionPerformed
 
+    private void RouteListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_RouteListItemStateChanged
+        refreshStops();
+    }//GEN-LAST:event_RouteListItemStateChanged
+
+    public void refreahRoutes(){
+        new APICallAsync<ArrayList<DBRequest>>(Busy,main) {
+            @Override
+            public Call<ArrayList<DBRequest>> apiFun() {
+                return main.service.getEntityList(main.debugToken,"TRoute",ValuesBase.GetAllModeActual,0);
+                }
+            @Override
+            public void onSucess(ArrayList<DBRequest> oo) {
+                routes.clear();
+                RouteList.removeAll();
+                for(DBRequest dbRequest : oo){
+                    try {
+                        TRoute route = (TRoute)dbRequest.get(main.gson);
+                        routes.add(route);
+                        RouteList.add(route.getTitle(typeMap)+" "+route.getStopName1()+"-"+route.getStopName2());
+                        } catch (UniException e) {
+                            System.out.println("Ошибка json: "+e.toString());
+                            }
+                    }
+                refreshStops();
+                }
+            };
+        }
+    public void refreshStops(){
+        StopList.removeAll();
+        if (routes.size()==0){
+            cRoute = null;
+            return;
+            }
+        cRoute = routes.get(RouteList.getSelectedIndex());
+        new APICallAsync<DBRequest>(Busy,main){
+            @Override
+            public Call<DBRequest> apiFun() {
+                return main.service.getEntity(main.debugToken,"TRoute",cRoute.getOid(),2);
+                }
+            @Override
+            public void onSucess(DBRequest oo) {
+                try {
+                    cRoute = (TRoute) oo.get(main.gson);
+                    for (TRouteStop stop : cRoute.getStops())
+                        StopList.add(stop.getStop().getRef().getName());
+                    } catch (UniException e) {
+                        System.out.println("Ошибка json: "+e.toString());
+                        }
+                }
+            };
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Busy;
     private javax.swing.JButton GorTransImport;
+    private java.awt.Choice RouteList;
     private javax.swing.JButton ScanOnOff;
+    private java.awt.Choice StopList;
     // End of variables declaration//GEN-END:variables
 }
