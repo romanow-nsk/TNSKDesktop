@@ -16,6 +16,7 @@ import romanow.abc.core.entity.EntityRefList;
 import romanow.abc.core.entity.baseentityes.JBoolean;
 import romanow.abc.core.entity.subjectarea.TRoute;
 import romanow.abc.core.entity.subjectarea.TRouteStop;
+import romanow.abc.core.entity.subjectarea.TSegment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ public class TNSKPanel extends TNSKBasePanel {
     private EntityRefList<TRoute> routes = new EntityRefList<>();
     private TRoute cRoute = null;
     private HashMap<Integer, ConstValue> typeMap = new HashMap<>();
+    private EntityRefList<TSegment> roads = new EntityRefList<>();
     private boolean scanOn=false;
     /**
      * Creates new form TNSKPanel
@@ -176,6 +178,19 @@ public class TNSKPanel extends TNSKBasePanel {
         refreshStops();
     }//GEN-LAST:event_RouteListItemStateChanged
 
+    public void refreshRoads(){
+        new APICallAsync<EntityRefList<TSegment>>(Busy, main) {
+            @Override
+            public Call<EntityRefList<TSegment>> apiFun() {
+                return main2.service2.getRoads(main.debugToken);
+                }
+            @Override
+            public void onSucess(EntityRefList<TSegment> oo) {
+                roads = oo;
+                System.out.println("Загружено "+oo.size()+" сегментов");
+                }
+            };
+        }
     public void refreahRoutes(){
         new APICallAsync<ArrayList<DBRequest>>(Busy,main) {
             @Override
@@ -196,6 +211,7 @@ public class TNSKPanel extends TNSKBasePanel {
                             }
                     }
                 refreshStops();
+                refreshRoads();
                 }
             };
         }
