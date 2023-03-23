@@ -253,7 +253,7 @@ public class TNSKPanel extends TNSKBasePanel {
                 System.out.println("Загружено "+oo.size()+" бортов");
                 CaresList.removeAll();
                 for(TCare care : cares)
-                    CaresList.add(care.getTitle(typeMap)+" "+care.getRoutePoint());
+                    CaresList.add(care.toString(typeMap));
             }
         };
     }//GEN-LAST:event_RouteCaresActionPerformed
@@ -274,7 +274,7 @@ public class TNSKPanel extends TNSKBasePanel {
                     System.out.println("Загружено "+oo.size()+" бортов");
                     CaresList.removeAll();
                     for(TCare care : cares)
-                        CaresList.add(care.getTitle(typeMap)+" "+care.getRoutePoint());
+                        CaresList.add(care.toString(typeMap));
                         }
                     };
             } catch (Exception ee){
