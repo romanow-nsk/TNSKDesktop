@@ -14,9 +14,11 @@ import romanow.abc.core.constants.Values;
 import romanow.abc.core.constants.ValuesBase;
 import romanow.abc.core.entity.EntityRefList;
 import romanow.abc.core.entity.baseentityes.JBoolean;
+import romanow.abc.core.entity.server.TCare;
 import romanow.abc.core.entity.subjectarea.TRoute;
 import romanow.abc.core.entity.subjectarea.TRouteStop;
 import romanow.abc.core.entity.subjectarea.TSegment;
+import romanow.abc.core.utils.GPSPoint;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ public class TNSKPanel extends TNSKBasePanel {
     private TRoute cRoute = null;
     private HashMap<Integer, ConstValue> typeMap = new HashMap<>();
     private EntityRefList<TSegment> roads = new EntityRefList<>();
+    private EntityRefList<TCare> cares = new EntityRefList<>();
     private boolean scanOn=false;
     /**
      * Creates new form TNSKPanel
@@ -69,6 +72,15 @@ public class TNSKPanel extends TNSKBasePanel {
         Busy = new javax.swing.JButton();
         RouteList = new java.awt.Choice();
         StopList = new java.awt.Choice();
+        Distance = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
+        GPSY = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        RouteCares = new javax.swing.JButton();
+        CaresList = new java.awt.Choice();
+        NearestCares = new javax.swing.JButton();
+        jLabel3 = new javax.swing.JLabel();
+        GPSX = new javax.swing.JTextField();
 
         setLayout(null);
 
@@ -81,7 +93,7 @@ public class TNSKPanel extends TNSKBasePanel {
             }
         });
         add(ScanOnOff);
-        ScanOnOff.setBounds(110, 10, 40, 40);
+        ScanOnOff.setBounds(105, 10, 40, 40);
 
         GorTransImport.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/upload.png"))); // NOI18N
         GorTransImport.setBorderPainted(false);
@@ -109,6 +121,54 @@ public class TNSKPanel extends TNSKBasePanel {
         RouteList.setBounds(20, 60, 370, 20);
         add(StopList);
         StopList.setBounds(20, 90, 190, 20);
+
+        Distance.setText("1000");
+        add(Distance);
+        Distance.setBounds(310, 150, 71, 25);
+
+        jLabel1.setText("Дистанция (м)");
+        add(jLabel1);
+        jLabel1.setBounds(220, 150, 90, 16);
+
+        GPSY.setText("54.888938");
+        add(GPSY);
+        GPSY.setBounds(110, 120, 90, 25);
+
+        jLabel2.setText("Широта");
+        add(jLabel2);
+        jLabel2.setBounds(20, 120, 50, 16);
+
+        RouteCares.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/taxi.png"))); // NOI18N
+        RouteCares.setBorderPainted(false);
+        RouteCares.setContentAreaFilled(false);
+        RouteCares.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RouteCaresActionPerformed(evt);
+            }
+        });
+        add(RouteCares);
+        RouteCares.setBounds(400, 50, 50, 40);
+        add(CaresList);
+        CaresList.setBounds(20, 180, 370, 20);
+
+        NearestCares.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/taxi.png"))); // NOI18N
+        NearestCares.setBorderPainted(false);
+        NearestCares.setContentAreaFilled(false);
+        NearestCares.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                NearestCaresActionPerformed(evt);
+            }
+        });
+        add(NearestCares);
+        NearestCares.setBounds(210, 110, 50, 40);
+
+        jLabel3.setText("Долгота");
+        add(jLabel3);
+        jLabel3.setBounds(20, 150, 90, 16);
+
+        GPSX.setText("83.095822");
+        add(GPSX);
+        GPSX.setBounds(111, 150, 90, 25);
     }// </editor-fold>//GEN-END:initComponents
     @Override
     public void refresh() {
@@ -178,6 +238,51 @@ public class TNSKPanel extends TNSKBasePanel {
         refreshStops();
     }//GEN-LAST:event_RouteListItemStateChanged
 
+    private void RouteCaresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RouteCaresActionPerformed
+        new APICallAsync<EntityRefList<TCare>>(Busy, main) {
+            @Override
+            public Call<EntityRefList<TCare>> apiFun() {
+                String routeKey = "";
+                if (routes.size()!=0)
+                    routeKey = routes.get(RouteList.getSelectedIndex()).getRouteKey();
+                return main2.service2.getActualCares(main.debugToken,routeKey);
+                }
+            @Override
+            public void onSucess(EntityRefList<TCare> oo) {
+                cares = oo;
+                System.out.println("Загружено "+oo.size()+" бортов");
+                CaresList.removeAll();
+                for(TCare care : cares)
+                    CaresList.add(care.getTitle(typeMap)+" "+care.getRoutePoint());
+            }
+        };
+    }//GEN-LAST:event_RouteCaresActionPerformed
+
+    private void NearestCaresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NearestCaresActionPerformed
+        try {
+            double dd1 = Double.parseDouble(GPSX.getText());
+            double dd2 = Double.parseDouble(GPSY.getText());
+            int diff = Integer.parseInt(Distance.getText());
+            new APICallAsync<EntityRefList<TCare>>(Busy, main) {
+                @Override
+                public Call<EntityRefList<TCare>> apiFun() {
+                    return main2.service2.getNearestCares(main.debugToken,diff,new GPSPoint(dd2,dd1,true));
+                    }
+                @Override
+                public void onSucess(EntityRefList<TCare> oo) {
+                    cares = oo;
+                    System.out.println("Загружено "+oo.size()+" бортов");
+                    CaresList.removeAll();
+                    for(TCare care : cares)
+                        CaresList.add(care.getTitle(typeMap)+" "+care.getRoutePoint());
+                        }
+                    };
+            } catch (Exception ee){
+                popup("Ошибка формата координат или дистанции");
+                }
+
+    }//GEN-LAST:event_NearestCaresActionPerformed
+
     public void refreshRoads(){
         new APICallAsync<EntityRefList<TSegment>>(Busy, main) {
             @Override
@@ -242,9 +347,18 @@ public class TNSKPanel extends TNSKBasePanel {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Busy;
+    private java.awt.Choice CaresList;
+    private javax.swing.JTextField Distance;
+    private javax.swing.JTextField GPSX;
+    private javax.swing.JTextField GPSY;
     private javax.swing.JButton GorTransImport;
+    private javax.swing.JButton NearestCares;
+    private javax.swing.JButton RouteCares;
     private java.awt.Choice RouteList;
     private javax.swing.JButton ScanOnOff;
     private java.awt.Choice StopList;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     // End of variables declaration//GEN-END:variables
 }
