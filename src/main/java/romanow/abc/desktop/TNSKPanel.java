@@ -15,6 +15,7 @@ import romanow.abc.core.constants.ValuesBase;
 import romanow.abc.core.entity.EntityRefList;
 import romanow.abc.core.entity.baseentityes.JBoolean;
 import romanow.abc.core.entity.server.TCare;
+import romanow.abc.core.entity.server.TCarePoint;
 import romanow.abc.core.entity.subjectarea.TRoute;
 import romanow.abc.core.entity.subjectarea.TRouteStop;
 import romanow.abc.core.entity.subjectarea.TSegment;
@@ -81,6 +82,13 @@ public class TNSKPanel extends TNSKBasePanel {
         NearestCares = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
         GPSX = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        CarePoints = new java.awt.Choice();
+        jLabel8 = new javax.swing.JLabel();
+        StorySize = new javax.swing.JTextField();
 
         setLayout(null);
 
@@ -95,7 +103,7 @@ public class TNSKPanel extends TNSKBasePanel {
         add(ScanOnOff);
         ScanOnOff.setBounds(105, 10, 40, 40);
 
-        GorTransImport.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/upload.png"))); // NOI18N
+        GorTransImport.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/download.png"))); // NOI18N
         GorTransImport.setBorderPainted(false);
         GorTransImport.setContentAreaFilled(false);
         GorTransImport.addActionListener(new java.awt.event.ActionListener() {
@@ -118,25 +126,25 @@ public class TNSKPanel extends TNSKBasePanel {
             }
         });
         add(RouteList);
-        RouteList.setBounds(20, 60, 370, 20);
+        RouteList.setBounds(120, 60, 370, 20);
         add(StopList);
-        StopList.setBounds(20, 90, 190, 20);
+        StopList.setBounds(120, 90, 370, 20);
 
         Distance.setText("1000");
         add(Distance);
-        Distance.setBounds(310, 150, 71, 25);
+        Distance.setBounds(110, 240, 71, 25);
 
         jLabel1.setText("Дистанция (м)");
         add(jLabel1);
-        jLabel1.setBounds(220, 150, 90, 16);
+        jLabel1.setBounds(20, 240, 90, 16);
 
         GPSY.setText("54.888938");
         add(GPSY);
-        GPSY.setBounds(110, 120, 90, 25);
+        GPSY.setBounds(110, 180, 90, 25);
 
-        jLabel2.setText("Широта");
+        jLabel2.setText("Ближайшие");
         add(jLabel2);
-        jLabel2.setBounds(20, 120, 50, 16);
+        jLabel2.setBounds(220, 180, 140, 16);
 
         RouteCares.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/taxi.png"))); // NOI18N
         RouteCares.setBorderPainted(false);
@@ -147,9 +155,15 @@ public class TNSKPanel extends TNSKBasePanel {
             }
         });
         add(RouteCares);
-        RouteCares.setBounds(400, 50, 50, 40);
+        RouteCares.setBounds(490, 50, 50, 40);
+
+        CaresList.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                CaresListItemStateChanged(evt);
+            }
+        });
         add(CaresList);
-        CaresList.setBounds(20, 180, 370, 20);
+        CaresList.setBounds(120, 120, 510, 20);
 
         NearestCares.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drawable/taxi.png"))); // NOI18N
         NearestCares.setBorderPainted(false);
@@ -160,15 +174,41 @@ public class TNSKPanel extends TNSKBasePanel {
             }
         });
         add(NearestCares);
-        NearestCares.setBounds(210, 110, 50, 40);
+        NearestCares.setBounds(210, 200, 50, 40);
 
         jLabel3.setText("Долгота");
         add(jLabel3);
-        jLabel3.setBounds(20, 150, 90, 16);
+        jLabel3.setBounds(20, 210, 90, 16);
 
         GPSX.setText("83.095822");
         add(GPSX);
-        GPSX.setBounds(111, 150, 90, 25);
+        GPSX.setBounds(110, 210, 90, 25);
+
+        jLabel4.setText("История");
+        add(jLabel4);
+        jLabel4.setBounds(20, 150, 90, 16);
+
+        jLabel5.setText("Маршруты");
+        add(jLabel5);
+        jLabel5.setBounds(20, 60, 100, 16);
+
+        jLabel6.setText("Остановки");
+        add(jLabel6);
+        jLabel6.setBounds(20, 90, 100, 16);
+
+        jLabel7.setText("Борта");
+        add(jLabel7);
+        jLabel7.setBounds(20, 120, 100, 16);
+        add(CarePoints);
+        CarePoints.setBounds(120, 150, 510, 20);
+
+        jLabel8.setText("Широта");
+        add(jLabel8);
+        jLabel8.setBounds(20, 180, 50, 16);
+
+        StorySize.setEnabled(false);
+        add(StorySize);
+        StorySize.setBounds(640, 150, 40, 25);
     }// </editor-fold>//GEN-END:initComponents
     @Override
     public void refresh() {
@@ -254,8 +294,9 @@ public class TNSKPanel extends TNSKBasePanel {
                 CaresList.removeAll();
                 for(TCare care : cares)
                     CaresList.add(care.toString(typeMap));
-            }
-        };
+                refreshCareStory();
+                }
+            };
     }//GEN-LAST:event_RouteCaresActionPerformed
 
     private void NearestCaresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NearestCaresActionPerformed
@@ -275,13 +316,38 @@ public class TNSKPanel extends TNSKBasePanel {
                     CaresList.removeAll();
                     for(TCare care : cares)
                         CaresList.add(care.toString(typeMap));
-                        }
-                    };
+                    refreshCareStory();
+                    }
+                };
             } catch (Exception ee){
                 popup("Ошибка формата координат или дистанции");
                 }
 
     }//GEN-LAST:event_NearestCaresActionPerformed
+
+    private void refreshCareStory(){
+        CarePoints.removeAll();
+        if (cares.size()==0)
+            return;
+        final TCare care = cares.get(CaresList.getSelectedIndex());
+        CarePoints.removeAll();
+        new APICall<TCare>(main) {
+            @Override
+            public Call<TCare> apiFun() {
+                return main2.service2.getCareStory(main.debugToken,care.getCareKey());
+                }
+            @Override
+            public void onSucess(TCare oo) {
+                StorySize.setText(""+oo.getCareStory().size());
+                for(TCarePoint point : oo.getCareStory())
+                    CarePoints.add(point.toString());
+                    }
+                };
+        }
+
+    private void CaresListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_CaresListItemStateChanged
+        refreshCareStory();
+    }//GEN-LAST:event_CaresListItemStateChanged
 
     public void refreshRoads(){
         new APICallAsync<EntityRefList<TSegment>>(Busy, main) {
@@ -347,6 +413,7 @@ public class TNSKPanel extends TNSKBasePanel {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Busy;
+    private java.awt.Choice CarePoints;
     private java.awt.Choice CaresList;
     private javax.swing.JTextField Distance;
     private javax.swing.JTextField GPSX;
@@ -357,8 +424,14 @@ public class TNSKPanel extends TNSKBasePanel {
     private java.awt.Choice RouteList;
     private javax.swing.JButton ScanOnOff;
     private java.awt.Choice StopList;
+    private javax.swing.JTextField StorySize;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     // End of variables declaration//GEN-END:variables
 }
