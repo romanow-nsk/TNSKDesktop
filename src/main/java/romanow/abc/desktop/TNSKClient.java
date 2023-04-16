@@ -34,7 +34,7 @@ public class TNSKClient extends Client {
                 {Values.UserAdminType}));
         panelDescList.add(new PanelDescriptor("Транспорт",TNSKPanel.class,new int[]
                 {Values.UserAdminType,Values.UserTutor}));
-    }
+        }
     //-------------------------------------------------------------------------------------------------------
     @Override
     public void onLoginSuccess(){
