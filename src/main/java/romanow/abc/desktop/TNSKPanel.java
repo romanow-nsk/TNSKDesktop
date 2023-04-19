@@ -8,7 +8,6 @@ import retrofit2.Call;
 import romanow.abc.core.DBRequest;
 import romanow.abc.core.ErrorList;
 import romanow.abc.core.UniException;
-import romanow.abc.core.Utils;
 import romanow.abc.core.constants.ConstValue;
 import romanow.abc.core.constants.Values;
 import romanow.abc.core.constants.ValuesBase;
@@ -16,11 +15,15 @@ import romanow.abc.core.entity.EntityRefList;
 import romanow.abc.core.entity.baseentityes.JBoolean;
 import romanow.abc.core.entity.server.TCare;
 import romanow.abc.core.entity.server.TCarePoint;
+import romanow.abc.core.entity.server.TSegmentStatistic;
 import romanow.abc.core.entity.subjectarea.TRoute;
 import romanow.abc.core.entity.subjectarea.TRouteStop;
 import romanow.abc.core.entity.subjectarea.TSegment;
+import romanow.abc.core.prepare.DayCellList;
+import romanow.abc.core.prepare.WeekCellList;
 import romanow.abc.core.utils.GPSPoint;
 
+import javax.swing.text.Segment;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -34,6 +37,7 @@ public class TNSKPanel extends TNSKBasePanel {
     private HashMap<Integer, ConstValue> typeMap = new HashMap<>();
     private EntityRefList<TSegment> roads = new EntityRefList<>();
     private EntityRefList<TCare> cares = new EntityRefList<>();
+    private EntityRefList<TSegment> segments = new EntityRefList<>();
     private boolean scanOn=false;
     /**
      * Creates new form TNSKPanel
@@ -48,8 +52,10 @@ public class TNSKPanel extends TNSKBasePanel {
         Busy.setVisible(false);
         typeMap = Values.constMap().getGroupMapByValue("RouteType");
         testScanState();
-        if (scanOn)
+        if (scanOn){
             refreahRoutes();
+            refreshSegments();
+            }
         }
     private boolean testBusy(){
         if (!Busy.isVisible())
@@ -89,6 +95,10 @@ public class TNSKPanel extends TNSKBasePanel {
         CarePoints = new java.awt.Choice();
         jLabel8 = new javax.swing.JLabel();
         StorySize = new javax.swing.JTextField();
+        Segments = new java.awt.Choice();
+        jLabel9 = new javax.swing.JLabel();
+        SegmentTotalCount = new javax.swing.JTextField();
+        SegmentNotNull = new javax.swing.JTextField();
 
         setLayout(null);
 
@@ -134,9 +144,9 @@ public class TNSKPanel extends TNSKBasePanel {
         add(Distance);
         Distance.setBounds(110, 240, 71, 25);
 
-        jLabel1.setText("Дистанция (м)");
+        jLabel1.setText("Сегменты");
         add(jLabel1);
-        jLabel1.setBounds(20, 240, 90, 16);
+        jLabel1.setBounds(20, 280, 90, 16);
 
         GPSY.setText("54.888938");
         add(GPSY);
@@ -208,7 +218,27 @@ public class TNSKPanel extends TNSKBasePanel {
 
         StorySize.setEnabled(false);
         add(StorySize);
-        StorySize.setBounds(640, 150, 40, 25);
+        StorySize.setBounds(640, 140, 40, 25);
+
+        Segments.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                SegmentsItemStateChanged(evt);
+            }
+        });
+        add(Segments);
+        Segments.setBounds(110, 280, 520, 20);
+
+        jLabel9.setText("Дистанция (м)");
+        add(jLabel9);
+        jLabel9.setBounds(20, 240, 90, 16);
+
+        SegmentTotalCount.setEnabled(false);
+        add(SegmentTotalCount);
+        SegmentTotalCount.setBounds(690, 275, 60, 25);
+
+        SegmentNotNull.setEnabled(false);
+        add(SegmentNotNull);
+        SegmentNotNull.setBounds(640, 275, 40, 25);
     }// </editor-fold>//GEN-END:initComponents
     @Override
     public void refresh() {
@@ -224,7 +254,7 @@ public class TNSKPanel extends TNSKBasePanel {
         new APICall<JBoolean>(main){
             @Override
             public Call<JBoolean> apiFun() {
-                return main2.service2.getScanState(main2.debugToken, main.loginUser.getAccount().getPassword());
+                return main2.service2.getScanState(main2.debugToken);
                 }
             @Override
             public void onSucess(JBoolean oo) {
@@ -248,8 +278,10 @@ public class TNSKPanel extends TNSKBasePanel {
             public void onSucess(ErrorList oo) {
                 System.out.println(oo.toString());
                 testScanState();
-                if (scanOn)
+                if (scanOn){
                     refreahRoutes();
+                    refreshSegments();
+                    }
             }
         };
     }//GEN-LAST:event_ScanOnOffActionPerformed
@@ -349,6 +381,10 @@ public class TNSKPanel extends TNSKBasePanel {
         refreshCareStory();
     }//GEN-LAST:event_CaresListItemStateChanged
 
+    private void SegmentsItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_SegmentsItemStateChanged
+        refreshOneSegment();
+    }//GEN-LAST:event_SegmentsItemStateChanged
+
     public void refreshRoads(){
         new APICallAsync<EntityRefList<TSegment>>(Busy, main) {
             @Override
@@ -383,6 +419,70 @@ public class TNSKPanel extends TNSKBasePanel {
                     }
                 refreshStops();
                 refreshRoads();
+                }
+            };
+        }
+    public void refreshSegments(){
+        new APICallAsync<ArrayList<DBRequest>>(Busy,main) {
+            @Override
+            public Call<ArrayList<DBRequest>> apiFun() {
+                return main.service.getEntityList(main.debugToken,"TSegment",ValuesBase.GetAllModeActual,0);
+                }
+            @Override
+            public void onSucess(ArrayList<DBRequest> oo) {
+                segments.clear();
+                Segments.removeAll();
+                for(DBRequest dbRequest : oo){
+                    try {
+                        TSegment segment = (TSegment) dbRequest.get(main.gson);
+                        segments.add(segment);
+                        Segments.add(segment.getTitle());
+                        } catch (UniException e) {
+                            System.out.println("Ошибка json: "+e.toString());
+                            }
+                    }
+                refreshOneSegment();
+                }
+            };
+        }
+    public void  refreshOneSegmentFull(final int idx){
+        new APICallAsync<DBRequest>(Busy,main) {
+            @Override
+            public Call<DBRequest> apiFun() {
+                return main.service.getEntity(main.debugToken,"TSegment",segments.get(idx).getOid(),1);
+                }
+            @Override
+            public void onSucess(DBRequest oo) {
+                TSegment segment = null;
+                try {
+                    segment = (TSegment)oo.get(main.gson);
+                    segments.remove(idx);
+                    segments.add(idx,segment);
+                    Segments.removeAll();
+                    for(TSegment segment1 : segments){
+                        Segments.add(segment1.getTitle());
+                        }
+                    Segments.select(idx);
+                    } catch (UniException e) {
+                        System.out.println("Ошибка JSON: "+e.toString());
+                        }
+                    }
+                };
+        }
+    public void  refreshOneSegment(){
+        if (segments.size()==0)
+            return;
+        final int idx = Segments.getSelectedIndex();
+        new APICallAsync<TSegmentStatistic>(Busy,main) {
+            @Override
+            public Call<TSegmentStatistic> apiFun() {
+                return main2.service2.getSegmentStatistic(main.debugToken,segments.get(idx).getOid());
+                }
+            @Override
+            public void onSucess(TSegmentStatistic oo) {
+                SegmentTotalCount.setText(""+oo.getTotalValues());
+                SegmentNotNull.setText(""+oo.getNotNullCellCount());
+                refreshOneSegmentFull(idx);
                 }
             };
         }
@@ -423,6 +523,9 @@ public class TNSKPanel extends TNSKBasePanel {
     private javax.swing.JButton RouteCares;
     private java.awt.Choice RouteList;
     private javax.swing.JButton ScanOnOff;
+    private javax.swing.JTextField SegmentNotNull;
+    private javax.swing.JTextField SegmentTotalCount;
+    private java.awt.Choice Segments;
     private java.awt.Choice StopList;
     private javax.swing.JTextField StorySize;
     private javax.swing.JLabel jLabel1;
@@ -433,5 +536,6 @@ public class TNSKPanel extends TNSKBasePanel {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     // End of variables declaration//GEN-END:variables
 }

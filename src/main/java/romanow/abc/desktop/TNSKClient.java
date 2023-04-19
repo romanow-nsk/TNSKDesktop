@@ -33,7 +33,7 @@ public class TNSKClient extends Client {
         panelDescList.add(new PanelDescriptor("Настройки сервера",WorkSettingsPanel.class,new int[]
                 {Values.UserAdminType}));
         panelDescList.add(new PanelDescriptor("Транспорт",TNSKPanel.class,new int[]
-                {Values.UserAdminType,Values.UserTutor}));
+                {Values.UserAdminType,Values.UserGuestType}));
         }
     //-------------------------------------------------------------------------------------------------------
     @Override
