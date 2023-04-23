@@ -422,7 +422,8 @@ public class TNSKPanel extends TNSKBasePanel {
                 }
             };
         }
-    public void refreshSegments(){
+    public void refreshSegments(){    // Без точек
+        /*
         new APICallAsync<ArrayList<DBRequest>>(Busy,main) {
             @Override
             public Call<ArrayList<DBRequest>> apiFun() {
@@ -444,8 +445,25 @@ public class TNSKPanel extends TNSKBasePanel {
                 refreshOneSegment();
                 }
             };
+         */
+        new APICallAsync<EntityRefList<TSegment>>(Busy,main) {
+            @Override
+            public Call<EntityRefList<TSegment>> apiFun() {
+                return main2.service2.getSegments(main.debugToken);
+                }
+            @Override
+            public void onSucess(EntityRefList<TSegment> oo) {
+                segments = oo;
+                Segments.removeAll();
+                for(TSegment segment : oo){
+                    Segments.add(segment.getTitle());
+                    }
+                refreshOneSegment();
+            }
+        };
         }
     public void  refreshOneSegmentFull(final int idx){
+        /* --------------------- Данные уже еасть из API --------------------------------------------
         new APICallAsync<DBRequest>(Busy,main) {
             @Override
             public Call<DBRequest> apiFun() {
@@ -468,6 +486,7 @@ public class TNSKPanel extends TNSKBasePanel {
                         }
                     }
                 };
+         */
         }
     public void  refreshOneSegment(){
         if (segments.size()==0)
